@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.vg</groupId>
-    <artifactId>live</artifactId>
+    <artifactId>spdytest</artifactId>
     <version>0.2</version>
     <packaging>jar</packaging>
 
-    <name>live</name>
+    <name>spdytest</name>
     <url>http://maven.apache.org</url>
 
     <properties>
@@ -29,25 +29,6 @@
         </extensions>
 
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2.1</version>
-                <configuration>
-                    <descriptors>
-                        <descriptor>uberjar.xml</descriptor>
-                    </descriptors>
-                    <finalName>live-${project.version}</finalName>
-                    <outputDirectory>target</outputDirectory>
-                    <workDirectory>target/assembly/work</workDirectory>
-                    <archive>
-                        <manifest>
-                            <mainClass>com.vg.live.LiveWebServerMain</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -82,12 +63,6 @@
             <name>Publuc Repository for Maven</name>
             <url>http://videogorillas.com/m2/</url>
         </repository>
-
-        <!--<repository>-->
-        <!--<id>private.videogorillas.com</id>-->
-        <!--<name>Private Repository for Maven</name>-->
-        <!--<url>scpexe://videogorillas.com/var/www/users/videogorillas/m2/private</url>-->
-        <!--</repository>-->
     </repositories>
 
 
@@ -148,21 +123,6 @@
             <version>2.24.0</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlet</artifactId>
-            <version>9.2.3.v20140905</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>9.2.3.v20140905</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-alpn-server</artifactId>
-            <version>9.2.3.v20140905</version>
-        </dependency>
-        <dependency>
             <groupId>org.jcodec</groupId>
             <artifactId>jcodec</artifactId>
             <version>0.1.9-z1</version>
@@ -185,11 +145,6 @@
             <version>0.6.2</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty.spdy</groupId>
-            <artifactId>spdy-http-server</artifactId>
-            <version>9.2.3.v20140905</version>
-        </dependency>
-        <dependency>
             <groupId>org.ocpsoft.prettytime</groupId>
             <artifactId>prettytime</artifactId>
             <version>3.2.5.Final</version>
@@ -205,26 +160,6 @@
             <version>0.16</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty.alpn</groupId>
-            <artifactId>alpn-api</artifactId>
-            <version>1.1.0.v20141014</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mortbay.jetty.alpn</groupId>
-            <artifactId>alpn-boot</artifactId>
-            <version>8.1.1.v20141016</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mortbay.jetty.npn</groupId>
-            <artifactId>npn-boot</artifactId>
-            <version>8.1.2.v20120308</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.aggregate</groupId>
-            <artifactId>jetty-all</artifactId>
-            <version>9.2.0.M0</version>
-        </dependency>
-        <dependency>
             <groupId>com.squareup.okhttp</groupId>
             <artifactId>okhttp</artifactId>
             <version>2.0.0</version>
@@ -233,6 +168,17 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.0.23.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.3.0.M0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-client</artifactId>
+            <version>9.3.0.M0</version>
         </dependency>
     </dependencies>
 </project>

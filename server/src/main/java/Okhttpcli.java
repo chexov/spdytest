@@ -29,7 +29,7 @@ import com.squareup.okhttp.internal.spdy.SpdyStream;
 
 public class Okhttpcli {
     public static void main(String[] args) throws Exception {
-        //        post();
+        //                post();
         spdy();
     }
 
@@ -57,12 +57,12 @@ public class Okhttpcli {
 
             SpdyStream stream = spdyConnection.newStream(SpdyTransport.writeNameValueBlock(request, spdyConnection.getProtocol(), "HTTP/1.1"), true, true);
             //        SpdyStream stream = connection.newStream(headerEntries("b", "banana"), true, true);
-            System.out.println(stream.isOpen());
 
             Sink sink = stream.getSink();
             BufferedSink out = Okio.buffer(sink);
             out.write(Files.readAllBytes(ts.toPath()));
-            out.close();
+            //            out.close();
+            System.out.println(stream.isOpen());
         }
 
         spdyConnection.close();
