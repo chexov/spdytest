@@ -180,5 +180,17 @@
             <artifactId>jetty-client</artifactId>
             <version>9.3.0.M0</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.spdy</groupId>
+            <artifactId>spdy-client</artifactId>
+            <version>9.3.0.M0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.spdy</groupId>
+            <artifactId>spdy-server</artifactId>
+            <version>9.3.0.M0</version>
+        </dependency>
+
     </dependencies>
 </project>
