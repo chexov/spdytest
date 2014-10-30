@@ -1,103 +1,99 @@
 package com.vg.live;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.appender.ConsoleAppender;
-import org.apache.logging.log4j.core.config.DefaultConfiguration;
-import org.apache.logging.log4j.core.layout.PatternLayout;
+import java.io.File;
+
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.SPDYServerConnector;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Fields.Field;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+
+import com.vg.util.LogManager;
+import com.vg.util.Logger;
 
 public class SPDYServer {
-    static {
-        DefaultConfiguration cfg = new DefaultConfiguration();
-        PatternLayout layout = PatternLayout.newBuilder().withPattern("%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} %msg%n").build();
-        ConsoleAppender appender = ConsoleAppender.createAppender(layout, null, "SYSTEM_OUT", "Console", "false", "true");
 
-        cfg.getRootLogger().setLevel(Level.ALL);
-        cfg.getRootLogger().addAppender(appender, Level.ALL, null);
-    }
+    public static final Logger log = LogManager.getLogger(SPDYServer.class);
 
     public static void main(String[] args) throws Exception {
+        File liveDir = new File("/Users/chexov/live/");
 
+        log.debug("spdy server");
+        log.error("asdfasdfads");
         ServerSessionFrameListener listener = new ServerSessionFrameListener.Adapter() {
             @Override
             public void onConnect(Session session) {
-                System.out.println("connect " + session);
+                log.debug("onConnect " + session);
 
-                //                Settings settings = new Settings();
-                //                settings.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, 100));
-                //
+                //                Settings s = new Settings();
+                //                s.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, 100));
+                //                SettingsInfo si = new SettingsInfo(s);
                 //                try {
-                //                    session.settings(new SettingsInfo(settings));
-                //                } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                //                    session.settings(si);
+                //                } catch (Exception e) {
                 //                    e.printStackTrace();
+                //                    throw new RuntimeException(e);
                 //                }
-                //
             }
 
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo) {
-                System.out.println("syn=" + synInfo);
-                System.out.println(synInfo.getHeaders());
-                System.out.println("path=" + synInfo.getHeaders().get(":path").getValue());
+                Fields headers = synInfo.getHeaders();
 
-                Fields headers = new Fields();
-                headers.add(":status", "ok");
+                log.debug("onSyn " + synInfo);
 
-                try {
-                    stream.reply(new ReplyInfo(headers, false));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
+                Field tslen = headers.get("ts-length");
+                Field path = headers.get(":path");
+                File tsFile = null;
+                int tslength = -1;
+                if (tslen != null && path != null) {
+                    tslength = Integer.parseInt(StringUtils.defaultString(tslen.getValue(), "-1"));
+                    log.debug("got ts length " + tslength + " " + path);
 
-                return new StreamFrameListener.Adapter() {
-                    @Override
-                    public void onData(Stream stream, DataInfo dataInfo) {
-                        System.out.println(Thread.currentThread().getName() + " Received the following client data: "
-                                + dataInfo.length());
+                    String[] split = path.getValue().split("\\/");
+
+                    //path=[/spdy/gopro/25fps/962.ts]
+                    if (split.length > 2) {
+                        String userId = split[split.length - 3];
+                        String streamName = split[split.length - 2];
+                        String tsName = split[split.length - 1];
+
+                        File streamDir = new File(liveDir, userId + "/" + streamName + "/");
+                        if (!streamDir.exists()) {
+                            streamDir.mkdirs();
+                        }
+
+                        tsFile = new File(streamDir, tsName);
+                        log.debug("tsFile = " + tsFile);
+                    } else {
+                        throw new RuntimeException("not an upload path: " + split);
                     }
-                };
+                }
+                return new TSFileUploadFrameListener(tsFile, tslength);
             }
 
         };
 
         Server server = new Server();
 
-        //        SPDYServerConnectionFactory spdy3 = new SPDYServerConnectionFactory(SPDY.V3, listener);
-        //        ServerConnector connector = new ServerConnector(server, new ConnectionFactory[] { spdy3 });
-        //        connector.setPort(8181);
-        //        server.addConnector(connector);
-
-        SPDYServerConnector spdyServerConnector = new SPDYServerConnector(server, listener);
-        spdyServerConnector.setPort(8181);
-        server.addConnector(spdyServerConnector);
-
-        //                HTTPSPDYServerConnector httpspdyServerConnector = new HTTPSPDYServerConnector(server);
-        //                httpspdyServerConnector.setPort(8181);
-        //                server.addConnector(httpspdyServerConnector);
-
-        //        server.setHandler(new AbstractHandler() {
-        //            public void handle(String target, Request baseRequest, HttpServletRequest request,
-        //                    HttpServletResponse response) throws IOException, ServletException {
-        //                response.setContentType("text/html;charset=utf-8");
-        //                response.setStatus(HttpServletResponse.SC_OK);
-        //                baseRequest.setHandled(true);
-        //                response.getWriter().println("<h1>Hello World</h1>");
-        //                System.out.println(baseRequest);
-        //            }
-        //        });
+        ServerConnector spdy3 = new ServerConnector(server, (SslContextFactory) null, new SPDYServerConnectionFactory(
+                SPDY.V3, listener), new HttpConnectionFactory());
+        spdy3.setPort(8181);
+        server.addConnector(spdy3);
 
         server.start();
         server.join();
-
     }
+
 }

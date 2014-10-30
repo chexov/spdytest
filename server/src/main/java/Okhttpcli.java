@@ -24,12 +24,13 @@ import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 import com.squareup.okhttp.internal.Platform;
 import com.squareup.okhttp.internal.http.SpdyTransport;
+import com.squareup.okhttp.internal.spdy.Header;
 import com.squareup.okhttp.internal.spdy.SpdyConnection;
 import com.squareup.okhttp.internal.spdy.SpdyStream;
 
 public class Okhttpcli {
     public static void main(String[] args) throws Exception {
-        //                post();
+        //        post();
         spdy();
     }
 
@@ -40,29 +41,31 @@ public class Okhttpcli {
         Socket socket = new Socket(Proxy.NO_PROXY);
         socket.setSoTimeout(0);
         InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", 8181);
-        int connectTimeout = 2000;
+        int connectTimeout = 10000;
         Platform.get().connectSocket(socket, inetSocketAddress, connectTimeout);
 
-        SpdyConnection spdyConnection = new SpdyConnection.Builder("localhost", true, socket).protocol(Protocol.SPDY_3).build();
+        SpdyConnection spdyConnection = new SpdyConnection.Builder("localhost:8181", true, socket).protocol(Protocol.SPDY_3).build();
         spdyConnection.sendConnectionPreface();
 
         File tsDir = new File("/Users/chexov/work/vig/idea/goprolive/goprolive/testdata/gopro/25fps/");
         ArrayList<File> ls = new ArrayList<>(ls(tsDir, suffixFileFilter(".ts")));
 
         for (File ts : ls) {
-            System.out.println(ts);
+            System.out.println("sending " + ts);
             RequestBody body = RequestBody.create(MediaType.parse("application/octet-stream"), ts);
             String sid = ts.getParentFile().getName() + "/" + ts.getName();
-            Request request = new Request.Builder().url("http://localhost:8183/spdy/" + sid).post(body).build();
+            Request request = new Request.Builder().url("http://localhost:8181/spdy/" + sid).post(body).build();
 
-            SpdyStream stream = spdyConnection.newStream(SpdyTransport.writeNameValueBlock(request, spdyConnection.getProtocol(), "HTTP/1.1"), true, true);
-            //        SpdyStream stream = connection.newStream(headerEntries("b", "banana"), true, true);
+            List<Header> headers = SpdyTransport.writeNameValueBlock(request, spdyConnection.getProtocol(), "HTTP/1.1");
+            headers.add(new Header("ts-length", "" + ts.length()));
+            SpdyStream stream = spdyConnection.newStream(headers, true, true);
 
             Sink sink = stream.getSink();
             BufferedSink out = Okio.buffer(sink);
             out.write(Files.readAllBytes(ts.toPath()));
-            //            out.close();
-            System.out.println(stream.isOpen());
+            sink.flush();
+
+            System.out.println("stream isOpen " + stream.isOpen());
         }
 
         spdyConnection.close();
