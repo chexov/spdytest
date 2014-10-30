@@ -2,9 +2,7 @@ package com.vg.live.spdy;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
