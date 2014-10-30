@@ -7,6 +7,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
+import org.eclipse.jetty.spdy.api.PingResultInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Settings;
@@ -35,7 +38,7 @@ public class SPDYServer {
         liveDir.mkdirs();
 
         final File finalLiveDir = liveDir;
-        ServerSessionFrameListener listener = new ServerSessionFrameListener.Adapter() {
+        ServerSessionFrameListener listener = new ServerSessionFrameListener() {
             @Override
             public void onConnect(Session session) {
                 log.debug("onConnect " + session);
@@ -51,6 +54,32 @@ public class SPDYServer {
                     e.printStackTrace();
                     throw new RuntimeException(e);
                 }
+            }
+
+            @Override
+            public void onRst(Session session, RstInfo rstInfo) {
+                log.debug("onRst " + rstInfo);
+            }
+
+            @Override
+            public void onSettings(Session session, SettingsInfo settingsInfo) {
+                log.debug("onSettings " + settingsInfo.getSettings());
+            }
+
+            @Override
+            public void onPing(Session session, PingResultInfo pingResultInfo) {
+                log.debug("onPing " + pingResultInfo);
+            }
+
+            @Override
+            public void onGoAway(Session session, GoAwayResultInfo goAwayResultInfo) {
+                log.debug("onGoAway " + goAwayResultInfo);
+            }
+
+            @Override
+            public void onFailure(Session session, Throwable x) {
+                log.debug("onFailure " + session);
+                x.printStackTrace();
             }
 
             @Override
