@@ -28,10 +28,13 @@ public class SPDYServer {
     public static final Logger log = LogManager.getLogger(SPDYServer.class);
 
     public static void main(String[] args) throws Exception {
-        File liveDir = new File("/Users/chexov/live/");
+        File liveDir = new File("/Users/chexov/live");
+        if (args.length == 1) {
+            liveDir = new File(args[0]);
+        }
+        liveDir.mkdirs();
 
-        log.debug("spdy server");
-        log.error("asdfasdfads");
+        final File finalLiveDir = liveDir;
         ServerSessionFrameListener listener = new ServerSessionFrameListener.Adapter() {
             @Override
             public void onConnect(Session session) {
@@ -72,7 +75,7 @@ public class SPDYServer {
                         String streamName = split[split.length - 2];
                         String tsName = split[split.length - 1];
 
-                        File streamDir = new File(liveDir, userId + "/" + streamName + "/");
+                        File streamDir = new File(finalLiveDir, userId + "/" + streamName + "/");
                         if (!streamDir.exists()) {
                             streamDir.mkdirs();
                         }
