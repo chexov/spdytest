@@ -6,12 +6,18 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.xml.transform.Source;
+
+import com.squareup.okhttp.internal.Util;
+import okio.Buffer;
 import okio.BufferedSink;
+import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
 
@@ -27,8 +33,12 @@ import com.squareup.okhttp.internal.http.SpdyTransport;
 import com.squareup.okhttp.internal.spdy.Header;
 import com.squareup.okhttp.internal.spdy.SpdyConnection;
 import com.squareup.okhttp.internal.spdy.SpdyStream;
+import com.vg.util.LogManager;
+import com.vg.util.Logger;
 
 public class Okhttpcli {
+    public static final Logger log = LogManager.getLogger(Okhttpcli.class);
+
     public static void main(String[] args) throws Exception {
         //        post();
         spdy();
@@ -38,20 +48,24 @@ public class Okhttpcli {
         OkHttpClient client = new OkHttpClient();
         client.setProtocols(Arrays.asList(Protocol.SPDY_3, Protocol.HTTP_1_1));
 
+        URL url = new URL("http://localhost:8181");
         Socket socket = new Socket(Proxy.NO_PROXY);
-        socket.setSoTimeout(0);
-        InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", 8181);
-        int connectTimeout = 10000;
+        socket.setSoTimeout(0); // SPDY timeouts are set per-stream.
+        InetSocketAddress inetSocketAddress = new InetSocketAddress(url.getHost(), url.getPort());
+
+        int connectTimeout = 1000;
         Platform.get().connectSocket(socket, inetSocketAddress, connectTimeout);
 
-        SpdyConnection spdyConnection = new SpdyConnection.Builder("localhost:8181", true, socket).protocol(Protocol.SPDY_3).build();
+        SpdyConnection spdyConnection = new SpdyConnection.Builder(true, socket).protocol(Protocol.SPDY_3).build();
         spdyConnection.sendConnectionPreface();
 
         File tsDir = new File("/Users/chexov/work/vig/idea/goprolive/goprolive/testdata/gopro/25fps/");
         ArrayList<File> ls = new ArrayList<>(ls(tsDir, suffixFileFilter(".ts")));
 
         for (File ts : ls) {
-            System.out.println("sending " + ts);
+            log.debug("sending " + ts);
+            log.debug("open stream count " + spdyConnection.openStreamCount());
+
             RequestBody body = RequestBody.create(MediaType.parse("application/octet-stream"), ts);
             String sid = ts.getParentFile().getName() + "/" + ts.getName();
             Request request = new Request.Builder().url("http://localhost:8181/spdy/" + sid).post(body).build();
@@ -60,12 +74,11 @@ public class Okhttpcli {
             headers.add(new Header("ts-length", "" + ts.length()));
             SpdyStream stream = spdyConnection.newStream(headers, true, true);
 
-            Sink sink = stream.getSink();
-            BufferedSink out = Okio.buffer(sink);
-            out.write(Files.readAllBytes(ts.toPath()));
-            sink.flush();
-
-            System.out.println("stream isOpen " + stream.isOpen());
+            BufferedSink out = Okio.buffer(stream.getSink());
+            byte[] data = Files.readAllBytes(ts.toPath());
+            log.debug("writing bytes " + data.length);
+            out.write(data);
+            out.flush();
         }
 
         spdyConnection.close();

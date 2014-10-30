@@ -1,20 +1,21 @@
 package com.vg.live;
 
 import java.io.File;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.Settings;
+import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.SPDYServerConnector;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Fields.Field;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -35,16 +36,18 @@ public class SPDYServer {
             @Override
             public void onConnect(Session session) {
                 log.debug("onConnect " + session);
+                Set<Stream> streams = session.getStreams();
+                log.debug("streams " + streams);
 
-                //                Settings s = new Settings();
-                //                s.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, 100));
-                //                SettingsInfo si = new SettingsInfo(s);
-                //                try {
-                //                    session.settings(si);
-                //                } catch (Exception e) {
-                //                    e.printStackTrace();
-                //                    throw new RuntimeException(e);
-                //                }
+                Settings s = new Settings();
+                s.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, 10));
+                SettingsInfo si = new SettingsInfo(s);
+                try {
+                    session.settings(si);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override

@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -16,6 +17,7 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 
 import com.vg.util.LogManager;
 import com.vg.util.Logger;
+import org.eclipse.jetty.util.Fields;
 
 class TSFileUploadFrameListener implements StreamFrameListener {
     public static final Logger log = LogManager.getLogger(TSFileUploadFrameListener.class);
@@ -57,39 +59,39 @@ class TSFileUploadFrameListener implements StreamFrameListener {
 
     @Override
     public void onData(Stream stream, DataInfo dataInfo) {
-
-        //        String clientData = dataInfo.asString("UTF-8", true);
-        //        System.out.println("Received the following client data: " + clientData);
-
-        String shortName = tsFile.getName();
-        log.debug(shortName + ": got bytes " + dataInfo.length());
-        ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
-        while (byteBuffer.hasRemaining()) {
-            try {
+        try {
+            String tsName = tsFile.getName();
+            log.debug(tsName + ": got bytes " + dataInfo.length());
+            ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
+            while (byteBuffer.hasRemaining()) {
                 long b = channel.size();
                 channel.write(byteBuffer);
                 int consumed = (int) (channel.size() - b);
                 dataInfo.consume(consumed);
 
-                log.debug(shortName + ": actual = " + channel.size() + " expected = " + expectedSize + " consumed = "
+                log.debug(tsName + ": actual = " + channel.size() + " expected = " + expectedSize + " consumed = "
                         + consumed);
-                if (channel.size() == expectedSize) {
-                    log.debug("got whole file");
-                    channel.close();
 
-                    try {
-                        stream.reply(new ReplyInfo(true));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        log.debug("stream not replied for " + tsFile);
-                        throw new RuntimeException(e);
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
             }
+
+            if (channel.isOpen() && channel.size() == expectedSize) {
+                log.debug(tsName + ": got whole file");
+                channel.close();
+                stream.reply(uploadOkInfo(tsName));
+            } else if (!channel.isOpen()) {
+                log.error(tsName + ": channel is closed but got data " + dataInfo.length());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
+    }
+
+    public ReplyInfo uploadOkInfo(String tsName) {
+        Fields hdrs = new Fields();
+        hdrs.add("file", tsName);
+        hdrs.add("upload", "ok");
+        return new ReplyInfo(hdrs, true);
     }
 
     @Override
