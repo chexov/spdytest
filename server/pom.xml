@@ -63,6 +63,14 @@
             <name>Publuc Repository for Maven</name>
             <url>http://videogorillas.com/m2/</url>
         </repository>
+        <repository>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>sonatype-snapshots</id>
+            <name>Sonatype Jetty Snapshots</name>
+            <url>https://oss.sonatype.org/content/groups/jetty</url>
+        </repository>
     </repositories>
 
 
@@ -73,16 +81,6 @@
             <version>2.0.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.eclipse.jetty.spdy</groupId>
-            <artifactId>spdy-client</artifactId>
-            <version>9.3.0.M0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.spdy</groupId>
-            <artifactId>spdy-server</artifactId>
-            <version>9.3.0.M0</version>
-        </dependency>
 
         <dependency>
             <groupId>com.vg.util</groupId>
@@ -110,5 +108,17 @@
             <artifactId>log4j-core</artifactId>
             <version>2.0.2</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.spdy</groupId>
+            <artifactId>spdy-server</artifactId>
+            <version>9.3.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.spdy</groupId>
+            <artifactId>spdy-client</artifactId>
+            <version>9.3.0-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 </project>

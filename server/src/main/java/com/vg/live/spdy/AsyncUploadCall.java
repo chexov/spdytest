@@ -50,14 +50,16 @@ public final class AsyncUploadCall implements Runnable {
             StreamFrameListener listener = new StreamFrameListener.Adapter() {
                 @Override
                 public void onReply(Stream stream, ReplyInfo replyInfo) {
-                    log.debug("got reply " + replyInfo);
+                    log.debug(Thread.currentThread().getName() + " got reply " + replyInfo);
                     callback.succeeded();
-                    dispatcher.finished(call);
+                    if (dispatcher != null) {
+                        dispatcher.finished(call);
+                    }
                 }
 
                 @Override
                 public void onFailure(Stream stream, Throwable x) {
-                    log.error(ts.getName() + " onFailure " + x);
+                    log.error(Thread.currentThread().getName() + " " + ts.getName() + " onFailure " + x);
                     try {
                         if (!stream.isClosed()) {
                             session.rst(new RstInfo(stream.getId(), StreamStatus.CANCEL_STREAM));
@@ -67,8 +69,10 @@ public final class AsyncUploadCall implements Runnable {
                     }
 
                     callback.failed(x);
-                    dispatcher.finished(call);
-                    dispatcher.enqueueFirst(call);
+                    if (dispatcher != null) {
+                        dispatcher.finished(call);
+                        dispatcher.enqueueFirst(call);
+                    }
                 }
             };
 
@@ -86,6 +90,7 @@ public final class AsyncUploadCall implements Runnable {
             BytesDataInfo dataInfo = new BytesDataInfo(0, TimeUnit.SECONDS, bytes, true);
 
             if (!stream.isClosed() || !stream.isReset()) {
+                log.debug("stream.data " + stream.getId() + " " + ts.getName() + " " + dataInfo.length());
                 stream.data(dataInfo, new Callback() {
                     @Override
                     public void succeeded() {
@@ -104,11 +109,14 @@ public final class AsyncUploadCall implements Runnable {
 
         } catch (Exception e) {
             log.debug("open session count is " + session.getStreams().size());
+            log.debug(session.getStreams());
             log.error(call + " upload task failed with exception " + e);
             e.printStackTrace();
             callback.failed(e);
-            dispatcher.finished(call);
-            dispatcher.enqueueFirst(call);
+            if (dispatcher != null) {
+                dispatcher.finished(call);
+                dispatcher.enqueueFirst(call);
+            }
         }
     }
 }

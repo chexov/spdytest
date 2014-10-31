@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
@@ -36,7 +37,17 @@ public class SPDYUploaderQueue {
     private Settings sessionSettings;
     int MAX_CONCURRENT_STREAMS = 1;
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(1);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(1, new ThreadFactory() {
+        public int num = 0;
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread thread = new Thread(r);
+            thread.setName("ololo-" + (num++));
+            thread.setDaemon(true);
+            return thread;
+        }
+    });
     private final AsyncDispatcher dispatcher;
 
     public SPDYUploaderQueue(URL url) throws Exception {
@@ -66,6 +77,10 @@ public class SPDYUploaderQueue {
 
     public ExecutorService getExecutorService() {
         return executorService;
+    }
+
+    public Session getSession() {
+        return session;
     }
 
     class SessionGoAwayException extends Exception {

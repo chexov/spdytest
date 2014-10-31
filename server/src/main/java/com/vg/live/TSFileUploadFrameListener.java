@@ -77,7 +77,7 @@ class TSFileUploadFrameListener implements StreamFrameListener {
             }
 
             if (channel.isOpen() && channel.size() == expectedSize) {
-                log.debug(tsName + ": got whole file. sending reply for " + stream.getId());
+                log.debug(tsName + ": got whole file. sending reply for sid" + stream.getId());
                 channel.close();
                 stream.reply(uploadOkInfo(tsName));
             } else if (!channel.isOpen()) {
