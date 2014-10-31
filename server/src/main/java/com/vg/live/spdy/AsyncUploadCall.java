@@ -2,7 +2,9 @@ package com.vg.live.spdy;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -39,9 +41,12 @@ public final class AsyncUploadCall implements Runnable {
 
     @Override
     public final void run() {
+        final AsyncUploadCall call = this;
+
         try {
+            log.debug("Open streams count = " + session.getStreams().size());
             log.debug("Uploading file " + ts);
-            final AsyncUploadCall call = this;
+
             StreamFrameListener listener = new StreamFrameListener.Adapter() {
                 @Override
                 public void onReply(Stream stream, ReplyInfo replyInfo) {
@@ -54,9 +59,11 @@ public final class AsyncUploadCall implements Runnable {
                 public void onFailure(Stream stream, Throwable x) {
                     log.error(ts.getName() + " onFailure " + x);
                     try {
-                        session.rst(new RstInfo(stream.getId(), StreamStatus.CANCEL_STREAM));
+                        if (!stream.isClosed()) {
+                            session.rst(new RstInfo(stream.getId(), StreamStatus.CANCEL_STREAM));
+                        }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("stream failure " + e.getCause());
                     }
 
                     callback.failed(x);
@@ -76,7 +83,7 @@ public final class AsyncUploadCall implements Runnable {
 
             byte[] bytes = Files.readAllBytes(ts.toPath());
             //            BytesDataInfo dataInfo = new BytesDataInfo(bytes, true);
-            BytesDataInfo dataInfo = new BytesDataInfo(10, TimeUnit.SECONDS, bytes, true);
+            BytesDataInfo dataInfo = new BytesDataInfo(0, TimeUnit.SECONDS, bytes, true);
 
             if (!stream.isClosed() || !stream.isReset()) {
                 stream.data(dataInfo, new Callback() {
@@ -95,9 +102,13 @@ public final class AsyncUploadCall implements Runnable {
                 throw new RuntimeException(stream + " is closed");
             }
 
-            log.debug("Open streams count = " + session.getStreams().size());
         } catch (Exception e) {
+            log.debug("open session count is " + session.getStreams().size());
+            log.error(call + " upload task failed with exception " + e);
+            e.printStackTrace();
             callback.failed(e);
+            dispatcher.finished(call);
+            dispatcher.enqueueFirst(call);
         }
     }
 }

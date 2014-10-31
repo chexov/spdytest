@@ -21,6 +21,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Fields.Field;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import com.vg.util.LogManager;
@@ -31,6 +32,7 @@ public class SPDYServer {
     public static final Logger log = LogManager.getLogger(SPDYServer.class);
 
     public static void main(String[] args) throws Exception {
+
         File liveDir = new File("/Users/chexov/live");
         if (args.length == 1) {
             liveDir = new File(args[0]);
@@ -51,6 +53,7 @@ public class SPDYServer {
                 try {
                     session.settings(si);
                 } catch (Exception e) {
+                    log.error("error sending settings " + e);
                     e.printStackTrace();
                     throw new RuntimeException(e);
                 }
@@ -78,7 +81,7 @@ public class SPDYServer {
 
             @Override
             public void onFailure(Session session, Throwable x) {
-                log.debug("onFailure " + session);
+                log.debug(x + " onFailure " + session);
                 x.printStackTrace();
             }
 
@@ -122,6 +125,7 @@ public class SPDYServer {
 
         };
 
+        Log.getRootLogger().setDebugEnabled(true);
         Server server = new Server();
 
         ServerConnector spdy3 = new ServerConnector(server, (SslContextFactory) null, new SPDYServerConnectionFactory(

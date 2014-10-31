@@ -1,37 +1,27 @@
 package com.vg.live.spdy;
 
-import java.lang.reflect.Array;
 import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-
-import com.squareup.okhttp.Call;
 
 public class AsyncDispatcher {
     private int maxExecuting = 1;
 
     private ExecutorService executorService;
+    CountDownLatch latch = new CountDownLatch(1);
 
     /**
      * Ready calls in the order they'll be run.
      */
-    private final Deque<AsyncUploadCall> readyCalls = new ArrayDeque<>();
+    private final ConcurrentLinkedDeque<AsyncUploadCall> readyCalls = new ConcurrentLinkedDeque<>();
 
     /**
      * Running calls. Includes canceled calls that haven't finished yet.
      */
-    private final Deque<AsyncUploadCall> runningCalls = new ArrayDeque<>();
-
-    /**
-     * In-flight synchronous calls. Includes canceled calls that haven't
-     * finished yet.
-     */
-    private final Deque<Call> executedCalls = new ArrayDeque<>();
+    private final ConcurrentLinkedDeque<AsyncUploadCall> runningCalls = new ConcurrentLinkedDeque<>();
 
     public AsyncDispatcher(ExecutorService executorService) {
         this.executorService = executorService;
@@ -83,6 +73,9 @@ public class AsyncDispatcher {
             throw new AssertionError("call wasn't running! " + call);
         promoteCalls();
         System.out.println("runningCalls=" + runningCalls.size() + " readyCalls=" + readyCalls.size());
+        if (isEmpty()) {
+            latch.countDown();
+        }
     }
 
     private void promoteCalls() {
@@ -106,6 +99,10 @@ public class AsyncDispatcher {
     synchronized void failed(AsyncUploadCall call) {
         finished(call);
         enqueueFirst(call);
+    }
+
+    public void await() throws InterruptedException {
+        latch.await();
     }
 
     public boolean isEmpty() {

@@ -3,10 +3,10 @@ package com.vg.live.spdy;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.PingResultInfo;
@@ -42,8 +42,16 @@ public class SPDYUploaderQueue {
     public SPDYUploaderQueue(URL url) throws Exception {
         this.url = url;
         this.spdyClient = spdyClient();
-        spdyClient.setIdleTimeout(10000);
-        this.session = createSession();
+        spdyClient.setIdleTimeout(0);
+        try {
+            this.session = createSession();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
         this.dispatcher = new AsyncDispatcher(executorService);
     }
 
@@ -53,16 +61,33 @@ public class SPDYUploaderQueue {
     }
 
     public void blockTillAllDone() throws Exception {
-        getExecutorService().awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        dispatcher.await();
     }
 
     public ExecutorService getExecutorService() {
         return executorService;
     }
 
-    public Session createSession() throws Exception {
-        SessionFrameListener sessionFrameListener = new SessionFrameListener.Adapter() {
+    class SessionGoAwayException extends Exception {
+        public SessionGoAwayException(String message) {
+            super(message);
+        }
+    }
+
+    public Session createSession() throws SessionGoAwayException, ExecutionException, InterruptedException {
+        SessionFrameListener sessionFrameListener = new SessionFrameListener() {
             public final Logger log = LogManager.getLogger(SessionFrameListener.class);
+
+            @Override
+            public void onGoAway(Session session, GoAwayResultInfo goAwayResultInfo) {
+                log.debug(session + "onGoAway " + goAwayResultInfo.getSessionStatus());
+                throw new RuntimeException("server told us to go away");
+            }
+
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo) {
+                return null;
+            }
 
             @Override
             public void onRst(Session session, RstInfo rstInfo) {
@@ -83,13 +108,19 @@ public class SPDYUploaderQueue {
             }
 
             @Override
-            public void onFailure(Session session, Throwable x) {
-                log.error(x + " onFailure " + session);
+            public void onPing(Session session, PingResultInfo pingResultInfo) {
 
             }
+
+            @Override
+            public void onFailure(Session session, Throwable x) {
+                log.error(x + " onFailure " + session);
+            }
         };
+
         SessionFrameListener sessionListener = sessionFrameListener;
-        return spdyClient.connect(new InetSocketAddress(url.getHost(), url.getPort()), sessionListener);
+        InetSocketAddress address = new InetSocketAddress(url.getHost(), url.getPort());
+        return spdyClient.connect(address, sessionListener);
     }
 
     public static SPDYClient spdyClient() throws Exception {
@@ -98,4 +129,5 @@ public class SPDYUploaderQueue {
         clientFactory.start();
         return clientFactory.newSPDYClient(SPDY.V3);
     }
+
 }

@@ -48,7 +48,7 @@ public class Okhttpcli {
         OkHttpClient client = new OkHttpClient();
         client.setProtocols(Arrays.asList(Protocol.SPDY_3, Protocol.HTTP_1_1));
 
-        URL url = new URL("http://localhost:8181");
+        URL url = new URL("http://cloud.videogorillas.com:8181");
         Socket socket = new Socket(Proxy.NO_PROXY);
         socket.setSoTimeout(0); // SPDY timeouts are set per-stream.
         InetSocketAddress inetSocketAddress = new InetSocketAddress(url.getHost(), url.getPort());
