@@ -12,11 +12,13 @@ import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 
 import com.vg.util.LogManager;
 import com.vg.util.Logger;
+import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.util.Fields;
 
 class TSFileUploadFrameListener implements StreamFrameListener {
@@ -75,11 +77,12 @@ class TSFileUploadFrameListener implements StreamFrameListener {
             }
 
             if (channel.isOpen() && channel.size() == expectedSize) {
-                log.debug(tsName + ": got whole file");
+                log.debug(tsName + ": got whole file. sending reply for " + stream.getId());
                 channel.close();
                 stream.reply(uploadOkInfo(tsName));
             } else if (!channel.isOpen()) {
                 log.error(tsName + ": channel is closed but got data " + dataInfo.length());
+                stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.INTERNAL_ERROR));
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -1,8 +1,13 @@
 package com.vg.live.spdy;
 
+import java.lang.reflect.Array;
 import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
 import com.squareup.okhttp.Call;
@@ -77,6 +82,7 @@ public class AsyncDispatcher {
         if (!runningCalls.remove(call))
             throw new AssertionError("call wasn't running! " + call);
         promoteCalls();
+        System.out.println("runningCalls=" + runningCalls.size() + " readyCalls=" + readyCalls.size());
     }
 
     private void promoteCalls() {
@@ -101,4 +107,9 @@ public class AsyncDispatcher {
         finished(call);
         enqueueFirst(call);
     }
+
+    public boolean isEmpty() {
+        return runningCalls.isEmpty() && readyCalls.isEmpty();
+    }
+
 }

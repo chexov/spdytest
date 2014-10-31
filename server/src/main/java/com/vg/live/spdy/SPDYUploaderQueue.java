@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
 import org.eclipse.jetty.spdy.api.PingResultInfo;
@@ -51,8 +52,8 @@ public class SPDYUploaderQueue {
         dispatcher.enqueue(asyncUploadCall);
     }
 
-    public void stop() throws Exception {
-        clientFactory.stop();
+    public void blockTillAllDone() throws Exception {
+        getExecutorService().awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
     }
 
     public ExecutorService getExecutorService() {

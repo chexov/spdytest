@@ -35,8 +35,6 @@ public class SPDYUploaderQueueTest {
 
             spdyUploaderQueue.newCall(ts, callback);
         }
-
-        spdyUploaderQueue.getExecutorService().awaitTermination(10, TimeUnit.MINUTES);
-        //        spdyUploaderQueue.stop();
+        spdyUploaderQueue.blockTillAllDone();
     }
 }

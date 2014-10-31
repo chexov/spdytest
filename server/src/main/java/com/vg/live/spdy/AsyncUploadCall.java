@@ -41,7 +41,6 @@ public final class AsyncUploadCall implements Runnable {
     public final void run() {
         try {
             log.debug("Uploading file " + ts);
-            log.debug("Open streams count = " + session.getStreams().size());
             final AsyncUploadCall call = this;
             StreamFrameListener listener = new StreamFrameListener.Adapter() {
                 @Override
@@ -95,6 +94,8 @@ public final class AsyncUploadCall implements Runnable {
             } else {
                 throw new RuntimeException(stream + " is closed");
             }
+
+            log.debug("Open streams count = " + session.getStreams().size());
         } catch (Exception e) {
             callback.failed(e);
         }

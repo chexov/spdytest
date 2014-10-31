@@ -84,9 +84,11 @@ public class SPDYServer {
 
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo) {
+                Session session = stream.getSession();
+                log.debug(session.getRemoteAddress() + " session open streams " + session.getStreams().size());
                 Fields headers = synInfo.getHeaders();
 
-                log.debug("onSyn " + synInfo);
+                log.debug(stream + " onSyn " + synInfo);
 
                 Field tslen = headers.get("ts-length");
                 Field path = headers.get(":path");
@@ -130,5 +132,4 @@ public class SPDYServer {
         server.start();
         server.join();
     }
-
 }
